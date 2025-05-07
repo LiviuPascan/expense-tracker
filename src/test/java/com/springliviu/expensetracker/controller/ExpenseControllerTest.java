@@ -1,11 +1,13 @@
 package com.springliviu.expensetracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.springliviu.expensetracker.dto.ExpenseRequest;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.service.ExpenseService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,11 @@ class ExpenseControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @BeforeEach
+    void setup() {
+        objectMapper.registerModule(new JavaTimeModule());
+    }
 
     @MockBean
     private ExpenseService expenseService;

@@ -13,8 +13,4 @@ public class ExpenseTrackerApplication {
         SpringApplication.run(ExpenseTrackerApplication.class, args);
     }
 
-    @Bean
-    CommandLineRunner run(ConsoleService consoleService) {
-        return args -> consoleService.run();
-    }
 }
