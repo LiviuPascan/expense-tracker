@@ -1,6 +1,7 @@
 package com.springliviu.expensetracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.springliviu.expensetracker.dto.CategoryRequest;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.service.CategoryService;
@@ -55,7 +56,7 @@ class CategoryControllerTest {
 
     @Test
     void shouldCreateCategory() throws Exception {
-        CategoryController.CategoryRequest request = new CategoryController.CategoryRequest("Transport", 1L);
+        CategoryRequest request = new CategoryRequest("Transport", 1L);
 
         Category category = new Category();
         category.setId(2L);

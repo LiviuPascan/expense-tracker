@@ -1,49 +1,38 @@
 package com.springliviu.expensetracker.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.service.UserService;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import com.springliviu.expensetracker.dto.UserRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+@RestController
+@RequestMapping("/api/users")
+public class UserControllerTest{
 
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+    private final UserService userService;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+    public UserControllerTest(UserService userService) {
+        this.userService = userService;
+    }
 
-@WebMvcTest(UserController.class)
-class UserControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
-    private UserService userService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Test
-    void shouldCreateOrFetchUser() throws Exception {
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("karina");
-        user.setPassword("secret");
-
-        UserController.UserRequest request = new UserController.UserRequest("karina", "secret");
-
-        Mockito.when(userService.createOrFetchUser("karina", "secret")).thenReturn(user);
-
-        mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("karina"));
+    @Operation(summary = "Создать нового пользователя или вернуть существующего")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Пользователь создан или найден",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = User.class))),
+            @ApiResponse(responseCode = "400", description = "Неверные данные", content = @Content)
+    })
+    @PostMapping
+    public ResponseEntity<User> createOrFetchUser(
+            @RequestBody UserRequest request) {
+        User user = userService.createOrFetchUser(request.username(), request.password());
+        return ResponseEntity.ok(user);
     }
 }
+

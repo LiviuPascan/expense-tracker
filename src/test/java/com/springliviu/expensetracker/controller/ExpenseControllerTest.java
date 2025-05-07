@@ -1,6 +1,7 @@
 package com.springliviu.expensetracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.springliviu.expensetracker.dto.ExpenseRequest;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import com.springliviu.expensetracker.dto.ExpenseRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -56,7 +58,7 @@ class ExpenseControllerTest {
 
     @Test
     void shouldCreateExpense() throws Exception {
-        ExpenseController.ExpenseRequest request = new ExpenseController.ExpenseRequest(
+        ExpenseRequest request = new ExpenseRequest(
                 BigDecimal.valueOf(120.5),
                 "Taxi",
                 LocalDate.of(2025, 5, 7),
