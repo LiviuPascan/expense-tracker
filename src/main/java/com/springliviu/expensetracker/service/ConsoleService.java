@@ -70,7 +70,7 @@ public class ConsoleService {
             int choice = Integer.parseInt(scanner.nextLine());
             Category category = categories.get(choice - 1);
 
-            expenseService.saveExpense(amount, description, date, user, category);
+            expenseService.createExpense(amount, description, date, user, category);
         }
 
         System.out.println("Программа завершена.");

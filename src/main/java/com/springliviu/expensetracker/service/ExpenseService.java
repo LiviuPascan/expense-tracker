@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class ExpenseService {
@@ -42,5 +43,9 @@ public class ExpenseService {
         expense.setUser(user);
         expense.setCategory(category);
         return expenseRepository.save(expense);
+    }
+
+    public List<Expense> getExpensesByUser(User user) {
+        return expenseRepository.findByUser(user);
     }
 }
