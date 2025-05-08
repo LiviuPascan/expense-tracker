@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import com.springliviu.expensetracker.dto.CategoryRequest;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
+@SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {

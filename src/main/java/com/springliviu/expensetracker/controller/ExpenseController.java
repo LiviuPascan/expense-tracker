@@ -10,13 +10,18 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
+@SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequestMapping("/api/expenses")
 public class ExpenseController {
@@ -27,19 +32,24 @@ public class ExpenseController {
         this.expenseService = expenseService;
     }
 
-    @Operation(summary = "Получить все расходы пользователя")
-    @ApiResponse(responseCode = "200", description = "Список расходов успешно получен",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = Expense.class)))
+    @Operation(summary = "Получить все расходы текущего пользователя с фильтрами")
     @GetMapping
-    public ResponseEntity<List<Expense>> getAllExpensesForUser(
-            @Parameter(description = "ID пользователя", example = "1")
-            @RequestParam Long userId) {
-        User user = new User();
-        user.setId(userId);
-
-        List<Expense> expenses = expenseService.getExpensesByUser(user);
-        return ResponseEntity.ok(expenses);
+    public ResponseEntity<List<Expense>> getExpenses(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minAmount,
+            @RequestParam(required = false) BigDecimal maxAmount,
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal User user
+    ) {
+        var expenses = expenseService.getFilteredExpenses(
+                user, from, to, categoryId, minAmount, maxAmount, sortBy, order, page, size
+        );
+        return ResponseEntity.ok(expenses.getContent());
     }
 
     @Operation(summary = "Создать новый расход")
@@ -55,11 +65,9 @@ public class ExpenseController {
                     description = "Данные для создания расхода",
                     required = true,
                     content = @Content(schema = @Schema(implementation = ExpenseRequest.class)))
-            @RequestBody ExpenseRequest request) {
-
-        User user = new User();
-        user.setId(request.userId());
-
+            @RequestBody ExpenseRequest request,
+            @AuthenticationPrincipal User user
+    ) {
         Category category = new Category();
         category.setId(request.categoryId());
 
@@ -84,9 +92,6 @@ public class ExpenseController {
 
             @Schema(description = "Дата расхода", example = "2025-05-07")
             LocalDate date,
-
-            @Schema(description = "ID пользователя", example = "1")
-            Long userId,
 
             @Schema(description = "ID категории", example = "3")
             Long categoryId

@@ -4,6 +4,12 @@ import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.repository.ExpenseRepository;
+import com.springliviu.expensetracker.repository.specification.ExpenseSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -47,5 +53,24 @@ public class ExpenseService {
 
     public List<Expense> getExpensesByUser(User user) {
         return expenseRepository.findByUser(user);
+    }
+
+    public Page<Expense> getFilteredExpenses(
+            User user,
+            LocalDate from,
+            LocalDate to,
+            Long categoryId,
+            BigDecimal minAmount,
+            BigDecimal maxAmount,
+            String sortBy,
+            String order,
+            int page,
+            int size
+    ) {
+        Sort.Direction direction = order.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        Specification<Expense> spec = ExpenseSpecification.withFilters(user, from, to, categoryId, minAmount, maxAmount);
+        return expenseRepository.findAll(spec, pageable);
     }
 }
