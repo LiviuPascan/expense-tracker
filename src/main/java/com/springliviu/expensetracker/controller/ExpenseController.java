@@ -1,10 +1,8 @@
 package com.springliviu.expensetracker.controller;
 
-import com.springliviu.expensetracker.model.Category;
-import com.springliviu.expensetracker.model.Expense;
-import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.security.UserDetailsImpl;
 import com.springliviu.expensetracker.service.ExpenseService;
+import com.springliviu.expensetracker.service.ExpenseService.ExpensePageDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 
 @SecurityRequirement(name = "BearerAuth")
 @RestController
@@ -31,11 +28,19 @@ public class ExpenseController {
         this.expenseService = expenseService;
     }
 
-    @Operation(summary = "Получить все расходы текущего пользователя с фильтрами")
+    @Operation(summary = "Фильтрация расходов с пагинацией и общей суммой (DTO)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Страница DTO расходов",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ExpensePageDto.class))),
+            @ApiResponse(responseCode = "400", description = "Неверные параметры запроса", content = @Content)
+    })
     @GetMapping
-    public ResponseEntity<List<Expense>> getExpenses(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+    public ResponseEntity<ExpensePageDto> getExpenses(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) BigDecimal minAmount,
             @RequestParam(required = false) BigDecimal maxAmount,
@@ -45,55 +50,40 @@ public class ExpenseController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        User user = userDetails.getUser();
-
-        var expenses = expenseService.getFilteredExpenses(
-                user, from, to, categoryId, minAmount, maxAmount, sortBy, order, page, size
+        ExpensePageDto dtoPage = expenseService.getFilteredExpensesDto(
+                userDetails.getUser(),
+                from, to,
+                categoryId,
+                minAmount, maxAmount,
+                sortBy, order,
+                page, size
         );
-        return ResponseEntity.ok(expenses.getContent());
+        return ResponseEntity.ok(dtoPage);
     }
 
     @Operation(summary = "Создать новый расход")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Расход успешно создан",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Expense.class))),
+                            schema = @Schema(implementation = Void.class))),
             @ApiResponse(responseCode = "400", description = "Ошибка запроса", content = @Content)
     })
     @PostMapping
-    public ResponseEntity<Expense> createExpense(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Данные для создания расхода",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = ExpenseRequest.class)))
-            @RequestBody ExpenseRequest request,
+    public ResponseEntity<Void> createExpense(
+            @RequestBody com.springliviu.expensetracker.dto.ExpenseRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        User user = userDetails.getUser();
-
-        Category category = new Category();
+        // мапим DTO → Category и передаем дальше
+        var category = new com.springliviu.expensetracker.model.Category();
         category.setId(request.categoryId());
 
-        Expense created = expenseService.createExpense(
+        expenseService.createExpense(
                 request.amount(),
                 request.description(),
                 request.date(),
-                user,
+                userDetails.getUser(),
                 category
         );
-
-        return ResponseEntity.ok(created);
+        return ResponseEntity.ok().build();
     }
-
-    @Schema(description = "Запрос для создания расхода")
-    public record ExpenseRequest(
-            @Schema(description = "Сумма расхода", example = "1500.00")
-            BigDecimal amount,
-            @Schema(description = "Описание расхода", example = "Покупка продуктов")
-            String description,
-            @Schema(description = "Дата расхода", example = "2025-05-07")
-            LocalDate date,
-            @Schema(description = "ID категории", example = "3")
-            Long categoryId
-    ) {}
 }

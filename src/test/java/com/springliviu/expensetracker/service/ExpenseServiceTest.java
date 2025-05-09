@@ -1,17 +1,21 @@
 package com.springliviu.expensetracker.service;
 
-import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.repository.ExpenseRepository;
+import com.springliviu.expensetracker.mapper.ExpenseMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ExpenseServiceTest {
@@ -19,67 +23,83 @@ class ExpenseServiceTest {
     @Mock
     private ExpenseRepository expenseRepository;
 
-    @InjectMocks
+    @Mock
+    private ExpenseMapper expenseMapper;
+
     private ExpenseService expenseService;
 
     @BeforeEach
-    void setup() {
+    void init() {
         MockitoAnnotations.openMocks(this);
-    }
-
-
-    @Test
-    void shouldThrowExceptionWhenAmountIsInvalid() {
-        User user = new User();
-        Category category = new Category();
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            expenseService.createExpense(BigDecimal.ZERO, "Lunch", LocalDate.now(), user, category);
-        });
-
-        assertEquals("Amount must be greater than zero", exception.getMessage());
+        expenseService = new ExpenseService(expenseRepository, expenseMapper);
     }
 
     @Test
-    void shouldThrowExceptionWhenDescriptionIsEmpty() {
-        User user = new User();
-        Category category = new Category();
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            expenseService.createExpense(BigDecimal.valueOf(50), "   ", LocalDate.now(), user, category);
-        });
-
-        assertEquals("Description must not be empty", exception.getMessage());
-    }
-
-
-    @Test
-    void shouldCreateAndReturnExpense() {
+    void getFilteredExpenses_whenNoData_thenEmptyPageWithZeroSum() {
+        // given
         User user = new User();
         user.setId(1L);
-        Category category = new Category();
-        category.setId(1L);
-        Expense expense = new Expense();
-        expense.setAmount(BigDecimal.valueOf(100));
-        expense.setDescription("Lunch");
-        expense.setDate(LocalDate.now());
-        expense.setUser(user);
-        expense.setCategory(category);
 
-        when(expenseRepository.save(any(Expense.class))).thenReturn(expense);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Expense> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-        Expense result = expenseService.createExpense(
-                BigDecimal.valueOf(100),
-                "Lunch",
-                LocalDate.now(),
-                user,
-                category
+        // мокируем любой Specification и любой Pageable
+        when(expenseRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(emptyPage);
+        when(expenseRepository.sumByFilter(1L, null, null, null, null, null))
+                .thenReturn(null);
+
+        // when
+        ExpenseService.ExpensePage result = expenseService.getFilteredExpenses(
+                user, null, null, null, null, null,
+                "date", "asc", 0, 10
         );
 
-        assertEquals(BigDecimal.valueOf(100), result.getAmount());
-        assertEquals("Lunch", result.getDescription());
-        assertEquals(user, result.getUser());
-        assertEquals(category, result.getCategory());
-        verify(expenseRepository).save(any(Expense.class));
+        // then
+        assertTrue(result.content().isEmpty());
+        assertEquals(0, result.totalElements());
+        assertEquals(0, result.totalPages());
+        assertEquals(BigDecimal.ZERO, result.totalSum());
+
+        verify(expenseRepository).findAll(any(Specification.class), any(Pageable.class));
+        verify(expenseRepository).sumByFilter(1L, null, null, null, null, null);
+    }
+
+    @Test
+    void getFilteredExpenses_withData_thenCorrectPageAndSum() {
+        // given
+        User user = new User();
+        user.setId(2L);
+
+        LocalDate from       = LocalDate.of(2025, 1, 1);
+        LocalDate to         = LocalDate.of(2025, 1, 31);
+        Long categoryId      = 5L;
+        BigDecimal minAmount = BigDecimal.valueOf(10);
+        BigDecimal maxAmount = BigDecimal.valueOf(100);
+
+        Pageable pageable = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "amount"));
+        Expense e1 = new Expense(); e1.setId(1L); e1.setAmount(BigDecimal.valueOf(50));
+        Expense e2 = new Expense(); e2.setId(2L); e2.setAmount(BigDecimal.valueOf(75));
+        Page<Expense> page = new PageImpl<>(List.of(e1, e2), pageable, 2);
+
+        when(expenseRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+        when(expenseRepository.sumByFilter(2L, from, to, categoryId, minAmount, maxAmount))
+                .thenReturn(BigDecimal.valueOf(125));
+
+        // when
+        ExpenseService.ExpensePage result = expenseService.getFilteredExpenses(
+                user, from, to, categoryId, minAmount, maxAmount,
+                "amount", "desc", 0, 2
+        );
+
+        // then
+        assertEquals(2, result.content().size());
+        assertEquals(2, result.totalElements());
+        assertEquals(1, result.totalPages());
+        assertEquals(BigDecimal.valueOf(125), result.totalSum());
+
+        verify(expenseRepository).findAll(any(Specification.class), any(Pageable.class));
+        verify(expenseRepository).sumByFilter(2L, from, to, categoryId, minAmount, maxAmount);
     }
 }

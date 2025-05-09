@@ -2,13 +2,45 @@ package com.springliviu.expensetracker.repository;
 
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpecificationExecutor<Expense> {
+@Repository
+public interface ExpenseRepository
+        extends JpaRepository<Expense, Long>,
+        JpaSpecificationExecutor<Expense> {
+
+    /**
+     * Получить все расходы заданного пользователя.
+     */
     List<Expense> findByUser(User user);
-    List<Expense> findByUserAndDateBetween(User user, LocalDate from, LocalDate to);
+
+    /**
+     * Суммирует amount у всех расходов пользователя с учётом опциональных фильтров.
+     * Если хочешь учитывать список категорий, можно добавить перегрузку или расширить этот запрос.
+     */
+    @Query("""
+        SELECT SUM(e.amount)
+        FROM Expense e
+        WHERE e.user.id = :userId
+          AND (:from       IS NULL OR e.date       >= :from)
+          AND (:to         IS NULL OR e.date       <= :to)
+          AND (:categoryId IS NULL OR e.category.id = :categoryId)
+          AND (:minAmount  IS NULL OR e.amount     >= :minAmount)
+          AND (:maxAmount  IS NULL OR e.amount     <= :maxAmount)
+        """)
+    BigDecimal sumByFilter(
+            @Param("userId")     Long userId,
+            @Param("from")       LocalDate from,
+            @Param("to")         LocalDate to,
+            @Param("categoryId") Long categoryId,
+            @Param("minAmount")  BigDecimal minAmount,
+            @Param("maxAmount")  BigDecimal maxAmount
+    );
 }

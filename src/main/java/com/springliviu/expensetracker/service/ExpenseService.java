@@ -1,14 +1,13 @@
 package com.springliviu.expensetracker.service;
 
+import com.springliviu.expensetracker.dto.ExpenseDto;
+import com.springliviu.expensetracker.mapper.ExpenseMapper;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.repository.ExpenseRepository;
 import com.springliviu.expensetracker.repository.specification.ExpenseSpecification;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -20,16 +19,28 @@ import java.util.List;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+    private final ExpenseMapper expenseMapper;
 
-    public ExpenseService(ExpenseRepository expenseRepository) {
+    public ExpenseService(ExpenseRepository expenseRepository,
+                          ExpenseMapper expenseMapper) {
         this.expenseRepository = expenseRepository;
+        this.expenseMapper     = expenseMapper;
     }
 
-    public Expense createExpense(BigDecimal amount, String description, LocalDate date, User user, Category category) {
+    /**
+     * Создаёт и сохраняет новый расход.
+     */
+    public Expense createExpense(
+            BigDecimal amount,
+            String description,
+            LocalDate date,
+            User user,
+            Category category
+    ) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
         }
-        if (description == null || description.trim().isEmpty()) {
+        if (description == null || description.isBlank()) {
             throw new IllegalArgumentException("Description must not be empty");
         }
         if (date == null) {
@@ -51,11 +62,20 @@ public class ExpenseService {
         return expenseRepository.save(expense);
     }
 
-    public List<Expense> getExpensesByUser(User user) {
-        return expenseRepository.findByUser(user);
-    }
+    /**
+     * Результат фильтрации на уровне сущностей.
+     */
+    public record ExpensePage(
+            List<Expense> content,
+            long totalElements,
+            int totalPages,
+            BigDecimal totalSum
+    ) {}
 
-    public Page<Expense> getFilteredExpenses(
+    /**
+     * Фильтрация расходов (работает с сущностями).
+     */
+    public ExpensePage getFilteredExpenses(
             User user,
             LocalDate from,
             LocalDate to,
@@ -67,10 +87,80 @@ public class ExpenseService {
             int page,
             int size
     ) {
-        Sort.Direction direction = order.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Long userId = user.getId();
 
-        Specification<Expense> spec = ExpenseSpecification.withFilters(user, from, to, categoryId, minAmount, maxAmount);
-        return expenseRepository.findAll(spec, pageable);
+        // 1) Pageable
+        Sort.Direction dir = order.equalsIgnoreCase("asc")
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(dir, sortBy));
+
+        // 2) Подготовка списка категорий для спецификации
+        List<Long> categoryIds = categoryId != null
+                ? List.of(categoryId)
+                : null;
+
+        // 3) Строим Specification
+        Specification<Expense> spec = ExpenseSpecification.withFilters(
+                userId, from, to, categoryIds, minAmount, maxAmount
+        );
+
+        // 4) Получаем страницу из репозитория
+        Page<Expense> pageEnt = expenseRepository.findAll(spec, pageable);
+
+        // 5) Считаем общую сумму по тем же фильтрам
+        BigDecimal sum = expenseRepository.sumByFilter(
+                userId, from, to, categoryId, minAmount, maxAmount
+        );
+        if (sum == null) sum = BigDecimal.ZERO;
+
+        return new ExpensePage(
+                pageEnt.getContent(),
+                pageEnt.getTotalElements(),
+                pageEnt.getTotalPages(),
+                sum
+        );
+    }
+
+    /**
+     * DTO-обёртка для ответа контроллера.
+     */
+    public record ExpensePageDto(
+            List<ExpenseDto> content,
+            long totalElements,
+            int totalPages,
+            BigDecimal totalSum
+    ) {}
+
+    /**
+     * Фильтрация и маппинг в DTO.
+     */
+    public ExpensePageDto getFilteredExpensesDto(
+            User user,
+            LocalDate from,
+            LocalDate to,
+            Long categoryId,
+            BigDecimal minAmount,
+            BigDecimal maxAmount,
+            String sortBy,
+            String order,
+            int page,
+            int size
+    ) {
+        ExpensePage ep = getFilteredExpenses(
+                user, from, to,
+                categoryId, minAmount, maxAmount,
+                sortBy, order, page, size
+        );
+
+        List<ExpenseDto> dtos = ep.content().stream()
+                .map(expenseMapper::toDto)
+                .toList();
+
+        return new ExpensePageDto(
+                dtos,
+                ep.totalElements(),
+                ep.totalPages(),
+                ep.totalSum()
+        );
     }
 }
