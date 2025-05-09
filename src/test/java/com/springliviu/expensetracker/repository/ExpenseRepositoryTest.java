@@ -3,9 +3,11 @@ package com.springliviu.expensetracker.repository;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
+import com.springliviu.expensetracker.model.Role;           // ← и здесь
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.math.BigDecimal;
@@ -15,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class ExpenseRepositoryTest {
 
     @Autowired
@@ -32,12 +35,13 @@ class ExpenseRepositoryTest {
         User user = new User();
         user.setUsername("expenseUser");
         user.setPassword("pass");
-        userRepository.save(user);
+        user.setRole(Role.USER);                        // ← здесь роль
+        user = userRepository.save(user);
 
         Category category = new Category();
         category.setName("Food");
         category.setUser(user);
-        categoryRepository.save(category);
+        category = categoryRepository.save(category);
 
         Expense expense = new Expense();
         expense.setAmount(new BigDecimal("50.00"));
