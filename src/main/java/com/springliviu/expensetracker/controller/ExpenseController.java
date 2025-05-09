@@ -3,9 +3,9 @@ package com.springliviu.expensetracker.controller;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
+import com.springliviu.expensetracker.security.UserDetailsImpl;
 import com.springliviu.expensetracker.service.ExpenseService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @SecurityRequirement(name = "BearerAuth")
 @RestController
@@ -44,8 +43,10 @@ public class ExpenseController {
             @RequestParam(defaultValue = "desc") String order,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
+        User user = userDetails.getUser();
+
         var expenses = expenseService.getFilteredExpenses(
                 user, from, to, categoryId, minAmount, maxAmount, sortBy, order, page, size
         );
@@ -66,8 +67,10 @@ public class ExpenseController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = ExpenseRequest.class)))
             @RequestBody ExpenseRequest request,
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
+        User user = userDetails.getUser();
+
         Category category = new Category();
         category.setId(request.categoryId());
 
@@ -86,15 +89,11 @@ public class ExpenseController {
     public record ExpenseRequest(
             @Schema(description = "Сумма расхода", example = "1500.00")
             BigDecimal amount,
-
             @Schema(description = "Описание расхода", example = "Покупка продуктов")
             String description,
-
             @Schema(description = "Дата расхода", example = "2025-05-07")
             LocalDate date,
-
             @Schema(description = "ID категории", example = "3")
             Long categoryId
-    ) {
-    }
+    ) {}
 }
