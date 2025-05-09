@@ -5,7 +5,7 @@ import com.springliviu.expensetracker.dto.AuthResponse;
 import com.springliviu.expensetracker.model.Role;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.repository.UserRepository;
-import com.springliviu.expensetracker.security.CustomUserDetails;
+import com.springliviu.expensetracker.security.UserDetailsImpl;
 import com.springliviu.expensetracker.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +49,7 @@ public class AuthController {
                 )
         );
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         String token = jwtTokenProvider.generateToken(userDetails);
 
         return ResponseEntity.ok(new AuthResponse(token));

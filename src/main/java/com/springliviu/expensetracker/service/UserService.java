@@ -4,6 +4,7 @@ import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -28,11 +29,17 @@ public class UserService {
             System.out.println("ℹ️ Пользователь " + username + " уже существует.");
             return existing.get();
         }
+
         User user = new User();
         user.setUsername(username);
-        user.setPassword(password);
+        user.setPassword(password); // 🔐 лучше использовать passwordEncoder, если это прод
         userRepository.save(user);
         System.out.println("✅ Пользователь создан и сохранён.");
         return user;
+    }
+
+    // 🔐 Метод только для ADMIN — получить всех пользователей
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }

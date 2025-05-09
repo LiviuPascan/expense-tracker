@@ -56,7 +56,7 @@ class CategoryControllerTest {
 
     @Test
     void shouldCreateCategory() throws Exception {
-        CategoryRequest request = new CategoryRequest("Transport", 1L);
+        CategoryRequest request = new CategoryRequest("Transport");
 
         Category category = new Category();
         category.setId(2L);
