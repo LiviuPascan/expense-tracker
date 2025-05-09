@@ -4,164 +4,91 @@ Java Spring Boot приложение для учёта личных расхо�
 
 ## Технологии
 
-- Java 17+
-- Spring Boot 3.4.x
-- PostgreSQL + Flyway
-- Spring Data JPA / Hibernate
-- Spring Web (REST API)
-- Spring Security + JWT
-- Swagger (springdoc-openapi)
-- JUnit 5, Mockito
-- @DataJpaTest, @WebMvcTest
+- Java 17+  
+- Spring Boot 3.4.x  
+- PostgreSQL + Flyway  
+- Spring Data JPA / Hibernate  
+- Spring Web (REST API)  
+- Spring Security + JWT  
+- Swagger (springdoc-openapi)  
+- Lombok 1.18.30  
+- MapStruct 1.5.5.Final  
+- JUnit 5, Mockito  
+- @DataJpaTest, @WebMvcTest  
 
-## Что реализовано
+## Реализовано
 
-- API с полным CRUD для пользователей, категорий и расходов
-- DTO вынесены в отдельный пакет (`UserRequest`, `CategoryRequest`, `ExpenseRequest`)
-- 🔐 Авторизация через JWT: регистрация, логин, защита эндпоинтов
-- 🧾 Swagger-документация доступна по `/swagger-ui.html` и поддерживает **авторизацию**
-- 🔥 Глобальный обработчик ошибок с помощью `@ControllerAdvice`
-- 🧪 REST API покрыт тестами с использованием `@WebMvcTest`, Postman и моками
-- 🖥 Поддержка запуска в интерактивном консольном режиме (через профиль `console`)
-- 🗃️ Flyway миграции для схемы и начальных данных (в т.ч. админ)
-
-## Покрытие тестами
-
-- Сервисы: `UserService`, `CategoryService`, `ExpenseService`
-- Контроллеры: `UserController`, `CategoryController`, `ExpenseController`
-- Репозитории с `@DataJpaTest`
-- REST API через `@WebMvcTest`
+- **CRUD API** для User, Category, Expense  
+- **DTO** в пакете `dto/` (`UserRequest`, `CategoryRequest`, `ExpenseRequest`, `ExpenseDto`)  
+- 🔐 **JWT-аутентификация**: регистрация, логин, защита эндпоинтов, `UserDetailsImpl`, `JwtTokenProvider`, `JwtAuthenticationFilter`  
+- 📑 **@AuthenticationPrincipal** вместо передачи `userId` в контроллерах `CategoryController` и `ExpenseController`  
+- 🔎 **Фильтрация и аналитика расходов**:  
+    - Параметры `from`, `to`, `categoryId`, `minAmount`, `maxAmount`  
+    - Сортировка (`sortBy`, `order`), пагинация (`page`, `size`)  
+    - Подсчёт общей суммы через метод `sumByFilter(...)` в `ExpenseRepository`  
+- 🛠 **MapStruct** для маппинга entity ↔ DTO (`ExpenseMapper`, `CategoryMapper`, `UserMapper`)  
+- 🔄 **POM**: удалён кастомный maven-compiler-plugin, обновлён Lombok, добавлен spring-boot-configuration-processor  
+- 👤 Модель `User` дополнили полем `role` (по умолчанию `Role.USER`) — исправлены ошибки NOT NULL в тестах  
+- 🧪 **Тесты**:  
+    - Unit-тесты сервисов (`ExpenseServiceTest`, `CategoryServiceTest`, `UserServiceTest`)  
+    - Репозитории через `@DataJpaTest` (`CategoryRepositoryTest`, `ExpenseRepositoryTest`)  
+    - Контроллеры через `@WebMvcTest` (моки Mockito, Security отключён в тестах)  
 
 ## Установка и запуск
 
-### 1. Клонируй репозиторий
+    git clone https://github.com/LiviuPascan/expense-tracker.git
+    cd expense-tracker
 
-```bash
-git clone https://github.com/LiviuPascan/expense-tracker.git
-cd expense-tracker
-```
+В src/main/resources/application.properties:
 
-### 2. Настрой `application.properties`
+    spring.datasource.url=jdbc:postgresql://localhost:5432/expense_db
+    spring.datasource.username=your_username
+    spring.datasource.password=your_password
+    spring.jpa.hibernate.ddl-auto=validate
+    spring.flyway.enabled=true
+    jwt.secret=your_secret_key
+    jwt.expiration=86400000
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/expense_db
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-spring.jpa.hibernate.ddl-auto=validate
-spring.flyway.enabled=true
-jwt.secret=your_secret_key
-jwt.expiration=86400000
-```
+Запуск:
 
-### 3. Запуск
+    ./mvnw spring-boot:run                                # REST API
+    ./mvnw spring-boot:run -Dspring-boot.run.profiles=console  # CLI режим
 
-#### Стандартный REST API
+## API
 
-```bash
-./mvnw spring-boot:run
-```
+| Метод | Endpoint       | Описание                                                       |
+|-------|----------------|----------------------------------------------------------------|
+| POST  | /auth/register | Регистрация нового пользователя                                |
+| POST  | /auth/login    | Получение JWT                                                  |
+| POST  | /api/categories| Создание категории (текущий пользователь через @AuthenticationPrincipal) |
+| GET   | /api/categories| Получение категорий текущего пользователя                      |
+| POST  | /api/expenses  | Создание расхода                                               |
+| GET   | /api/expenses  | Получение расходов с фильтрами, сортировкой и пагинацией       |
 
-#### Режим консоли (для CLI)
+Пример:
 
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=console
-```
+    GET /api/expenses?from=2025-01-01&to=2025-01-31&categoryId=3&minAmount=10&maxAmount=100&sortBy=amount&order=desc&page=0&size=10
+    Authorization: Bearer <token>
 
-## Аутентификация
+## Swagger
 
-- Регистрация: `POST /auth/register`
-- Логин: `POST /auth/login`
-- Полученный JWT токен передаётся в заголовке:
+1. Откройте /swagger-ui.html  
+2. Нажмите **Authorize**, введите Bearer <token>, снова **Authorize**  
+3. Тестируйте защищённые эндпоинты  
 
-```http
-Authorization: Bearer <токен>
-```
+## Миграции
 
-## Swagger авторизация
+Flyway применяет скрипты из src/main/resources/db/migration, включая создание админа:
 
-1. Перейди на [`/swagger-ui.html`](http://localhost:8080/swagger-ui.html)
-2. Нажми **Authorize**
-3. Введи:
-
-```
-Bearer <токен>
-```
-
-4. Нажми **Authorize** — и ты можешь тестировать защищённые эндпоинты прямо в Swagger.
-
-## REST API
-
-| Метод | Endpoint          | Описание                                 |
-|-------|--------------------|-------------------------------------------|
-| POST  | /auth/register     | Регистрация нового пользователя          |
-| POST  | /auth/login        | Получение JWT токена                     |
-| POST  | /api/categories    | Добавление категории                     |
-| GET   | /api/categories    | Получение категорий по `userId`         |
-| POST  | /api/expenses      | Добавление расхода                       |
-| GET   | /api/expenses      | Получение расходов текущего пользователя |
-
-## Примеры JSON-запросов
-
-### POST /auth/register
-
-```json
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
-
-### POST /auth/login
-
-```json
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
-
-### POST /api/categories
-
-```json
-{
-  "name": "Еда",
-  "userId": 100
-}
-```
-
-### POST /api/expenses
-
-```json
-{
-  "amount": 89.90,
-  "description": "Ужин в кафе",
-  "date": "2025-05-07",
-  "categoryId": 2
-}
-```
-
-## Миграции и данные
-
-Flyway автоматически применяет миграции из `/resources/db/migration`.  
-В том числе создаётся админ-пользователь:
-
-```sql
-INSERT INTO users (id, username, password, role)
-VALUES (
-  100,
-  'admin',
-  '$2a$10$BffdSPe0MZuuN/A3zpzbHe0SX4rfkg/ThG9kd/5zKGj/u2cOF6mJO',
-  'ADMIN'
-)
-ON CONFLICT (id) DO NOTHING;
-```
+    INSERT INTO users (id, username, password, role)
+    VALUES (100, 'admin', '<bcrypt-hash>', 'ADMIN')
+    ON CONFLICT (id) DO NOTHING;
 
 ## План на будущее
 
-- 🌐 PostgreSQL в облаке
-- 🧑‍💻 Веб-интерфейс на React или Angular
-- 📊 Фильтрация расходов, отчёты и графики
+- 🧪 Тесты для AuthController и интеграционные тесты защищённых API  
+- 📊 Отчёты и экспорт Excel/PDF  
+- 🔐 Разграничение прав через @PreAuthorize (ADMIN vs USER)  
+- 🚀 CI/CD (GitHub Actions), деплой на Railway/Render  
+- 🌐 Веб-интерфейс на React или Angular  
 
----
-
-> 💻 Разработка: [Liviu Pascan (GitHub)](https://github.com/LiviuPascan)
