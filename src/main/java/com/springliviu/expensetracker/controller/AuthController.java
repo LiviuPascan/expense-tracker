@@ -1,11 +1,13 @@
 package com.springliviu.expensetracker.controller;
 
+import com.springliviu.expensetracker.dto.AuthRequest;
+import com.springliviu.expensetracker.dto.AuthResponse;
 import com.springliviu.expensetracker.model.Role;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.repository.UserRepository;
-import com.springliviu.expensetracker.security.JwtUtil;
-import com.springliviu.expensetracker.security.UserDetailsImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.springliviu.expensetracker.security.CustomUserDetails;
+import com.springliviu.expensetracker.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,26 +17,16 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-
-    @Autowired
-    public AuthController(AuthenticationManager authenticationManager,
-                          UserRepository userRepository,
-                          PasswordEncoder passwordEncoder,
-                          JwtUtil jwtUtil) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-    }
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User request) {
+    public ResponseEntity<?> register(@RequestBody AuthRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body("Username already exists");
         }
@@ -42,24 +34,24 @@ public class AuthController {
         User newUser = new User();
         newUser.setUsername(request.getUsername());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-        newUser.setRole(Role.USER); // 💥 назначаем обычную роль
+        newUser.setRole(Role.USER);
         userRepository.save(newUser);
 
         return ResponseEntity.ok("User registered successfully");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User request) {
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword()
+                )
         );
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String token = jwtUtil.generateToken(userDetails.getUsername());
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String token = jwtTokenProvider.generateToken(userDetails);
 
         return ResponseEntity.ok(new AuthResponse(token));
     }
-
-    // простой класс-обёртка для возврата токена
-    public record AuthResponse(String token) {}
 }

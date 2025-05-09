@@ -1,5 +1,6 @@
 package com.springliviu.expensetracker.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,44 +14,35 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@EnableMethodSecurity // 💥 Эта строка включает поддержку @PreAuthorize и других аннотаций
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtUtil jwtUtil;
+    private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsServiceImpl userDetailsService;
-
-    public SecurityConfig(JwtUtil jwtUtil, UserDetailsServiceImpl userDetailsService) {
-        this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
-    }
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtUtil, userDetailsService);
+        return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-
-                .csrf().disable()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .authorizeHttpRequests()
-                .requestMatchers(
-                        "/auth/**",
-                        "/api/users",
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/v3/api-docs.yaml",
-                        "/swagger-resources/**",
-                        "/webjars/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-                .and()
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/auth/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-
 
         return http.build();
     }
