@@ -40,6 +40,7 @@ public class CategoryController {
 
         User user = userDetails.getUser();
         List<Category> categories = categoryService.getCategoriesByUser(user);
+        System.out.println(">>> Categories = " + categories);
         return ResponseEntity.ok(categories);
     }
 
@@ -57,6 +58,7 @@ public class CategoryController {
 
         User user = userDetails.getUser();
         Category created = categoryService.createCategory(request.name(), user);
+        System.out.println(">>> Category created = " + created);
         return ResponseEntity.ok(created);
     }
 }

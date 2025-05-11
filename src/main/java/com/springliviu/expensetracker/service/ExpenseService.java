@@ -1,6 +1,7 @@
 package com.springliviu.expensetracker.service;
 
 import com.springliviu.expensetracker.dto.ExpenseDto;
+import com.springliviu.expensetracker.dto.ExpensePageDto;
 import com.springliviu.expensetracker.mapper.ExpenseMapper;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
@@ -63,7 +64,7 @@ public class ExpenseService {
     }
 
     /**
-     * Результат фильтрации на уровне сущностей.
+     * Вспомогательная обёртка над Page<Expense>
      */
     public record ExpensePage(
             List<Expense> content,
@@ -89,25 +90,20 @@ public class ExpenseService {
     ) {
         Long userId = user.getId();
 
-        // 1) Pageable
         Sort.Direction dir = order.equalsIgnoreCase("asc")
                 ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(dir, sortBy));
 
-        // 2) Подготовка списка категорий для спецификации
         List<Long> categoryIds = categoryId != null
                 ? List.of(categoryId)
                 : null;
 
-        // 3) Строим Specification
         Specification<Expense> spec = ExpenseSpecification.withFilters(
                 userId, from, to, categoryIds, minAmount, maxAmount
         );
 
-        // 4) Получаем страницу из репозитория
         Page<Expense> pageEnt = expenseRepository.findAll(spec, pageable);
 
-        // 5) Считаем общую сумму по тем же фильтрам
         BigDecimal sum = expenseRepository.sumByFilter(
                 userId, from, to, categoryId, minAmount, maxAmount
         );
@@ -123,16 +119,6 @@ public class ExpenseService {
 
     /**
      * DTO-обёртка для ответа контроллера.
-     */
-    public record ExpensePageDto(
-            List<ExpenseDto> content,
-            long totalElements,
-            int totalPages,
-            BigDecimal totalSum
-    ) {}
-
-    /**
-     * Фильтрация и маппинг в DTO.
      */
     public ExpensePageDto getFilteredExpensesDto(
             User user,
@@ -158,8 +144,8 @@ public class ExpenseService {
 
         return new ExpensePageDto(
                 dtos,
-                ep.totalElements(),
                 ep.totalPages(),
+                ep.totalElements(),
                 ep.totalSum()
         );
     }

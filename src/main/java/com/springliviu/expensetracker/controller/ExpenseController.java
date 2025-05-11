@@ -2,7 +2,7 @@ package com.springliviu.expensetracker.controller;
 
 import com.springliviu.expensetracker.security.UserDetailsImpl;
 import com.springliviu.expensetracker.service.ExpenseService;
-import com.springliviu.expensetracker.service.ExpenseService.ExpensePageDto;
+import com.springliviu.expensetracker.dto.ExpensePageDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -58,6 +58,7 @@ public class ExpenseController {
                 sortBy, order,
                 page, size
         );
+        System.out.println(">>> DTO returned: " + dtoPage);
         return ResponseEntity.ok(dtoPage);
     }
 
