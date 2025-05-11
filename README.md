@@ -22,171 +22,221 @@
 
 ---
 
-## Описание
+## 📌 Описание
 
-ExpenseTracker — это Java-приложение на Spring Boot, позволяющее:  
-- регистрировать и аутентифицировать пользователей (JWT),  
-- создавать и управлять категориями расходов,  
-- добавлять, фильтровать и просматривать расходы,  
-- получать аналитику (суммы, агрегации по категориям),  
-- экспортировать отчёты (Excel/PDF) (в разработке).  
+**ExpenseTracker** — это Java-приложение на Spring Boot, позволяющее:
+- регистрировать и аутентифицировать пользователей (JWT),
+- управлять категориями расходов,
+- добавлять и фильтровать расходы,
+- получать аналитику (в том числе общую сумму),
+- просматривать Swagger-документацию и тестировать API прямо из браузера.
 
-Все данные хранятся в PostgreSQL с миграциями Flyway; в слое доступа используется Spring Data JPA + Hibernate.
-
----
-
-## Технологии
-
-- Java 17+, Spring Boot 3.4.x  
-- PostgreSQL + Flyway  
-- Spring Data JPA / Hibernate  
-- Spring Web (REST API)  
-- Spring Security + JWT  
-- springdoc-openapi (Swagger UI)  
-- MapStruct 1.5.5.Final  
-- Lombok 1.18.30  
-- JUnit 5, Mockito, @WebMvcTest, @DataJpaTest  
+Все данные хранятся в PostgreSQL с миграциями Flyway. Тесты используют H2 и полностью изолированы.
 
 ---
 
-## Возможности
+## 🚀 Технологии
 
-- **Аутентификация и авторизация**  
-  – Регистрация (`/auth/register`)  
-  – Логин (`/auth/login`) → JWT  
-  – Защита эндпоинтов Bearer-токеном  
-- **CRUD-операции** для:  
-  – Пользователей  
-  – Категорий (с `@AuthenticationPrincipal`)  
-  – Расходов (с фильтрами, сортировкой, пагинацией)  
-- **Фильтрация и аналитика**  
-  – Параметры `from`, `to`, `categoryId`, `minAmount`, `maxAmount`  
-  – Сортировка (`sortBy`, `order`), пагинация (`page`, `size`)  
-  – Подсчёт общей суммы через `sumByFilter(...)`  
-- **MapStruct** для маппинга entity ↔ DTO  
-- **Тесты**  
-  – Unit-тесты сервисов (JUnit 5 + Mockito)  
-  – @DataJpaTest для репозиториев  
-  – @WebMvcTest для контроллеров (без Security)  
+- **Java 17+, Spring Boot 3.4.x**
+- **PostgreSQL + Flyway**
+- **Spring Data JPA / Hibernate**
+- **Spring Web, Spring Security (JWT)**
+- **MapStruct**
+- **Swagger (springdoc-openapi)**
+- **Lombok 1.18.30**
+- **JUnit 5, Mockito**
+- **Интеграционные тесты: `@WebMvcTest`, `@DataJpaTest`**
 
 ---
 
-## Предварительные требования
+## ✅ Возможности
 
-- Java 17 или выше  
-- Maven 3.8+  
-- Docker (опционально для PostgreSQL)  
+### 🔐 Аутентификация и авторизация
+- JWT логин и регистрация
+- Защита эндпоинтов с Bearer-токеном
+- Упрощённый доступ к пользователю через `@AuthenticationPrincipal`
+
+### 📁 Категории
+- CRUD операции по категориям
+- Категория принадлежит конкретному пользователю
+- Получение списка категорий
+
+### 💸 Расходы
+- Создание и отображение расходов
+- Расширенная фильтрация:
+  - по дате (`from`, `to`)
+  - по категории (`categoryId`)
+  - по сумме (`minAmount`, `maxAmount`)
+- Сортировка и пагинация (`sortBy`, `order`, `page`, `size`)
+- Подсчёт общей суммы расходов по фильтру
+- Маппинг сущностей в DTO через MapStruct
+
+### 📦 Архитектура
+- DTO: `ExpenseDto`, `ExpenseRequest`, `ExpensePageDto`
+- Маппинг через `ExpenseMapper`
+- Сервисная логика изолирована от контроллеров
+- Роли (`Role.USER`, `Role.ADMIN`) в модели `User`
 
 ---
 
-## Установка и запуск
+## 🛠️ Предварительные требования
+
+- Java 17+
+- Maven 3.8+
+- PostgreSQL (или Docker)
+- Git
+
+---
+
+## 📦 Установка и запуск
 
 ```bash
-git clone https://github.com/LiviuPascan/expense-tracker.git
+git clone https://github.com/your-username/expense-tracker.git
 cd expense-tracker
 ```
 
-1. Поднимите PostgreSQL (локально или в Docker):
+1. Поднимите PostgreSQL через Docker:
 
-   ```bash
-   docker run -d \
-     --name pg-expense \
-     -e POSTGRES_DB=expense_db \
-     -e POSTGRES_USER=your_user \
-     -e POSTGRES_PASSWORD=your_pass \
-     -p 5432:5432 \
-     postgres:15
-   ```
+```bash
+docker run -d \
+  --name pg-expense \
+  -e POSTGRES_DB=expense_tracker \
+  -e POSTGRES_USER=liviupostgre \
+  -e POSTGRES_PASSWORD=rootroot \
+  -p 5432:5432 \
+  postgres:15
+```
 
-2. В файле `src/main/resources/application.properties` задайте параметры подключения:
+2. Настройте `src/main/resources/application.properties`:
 
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/expense_db
-   spring.datasource.username=your_user
-   spring.datasource.password=your_pass
-   spring.jpa.hibernate.ddl-auto=validate
-   spring.flyway.enabled=true
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/expense_tracker
+spring.datasource.username=liviupostgre
+spring.datasource.password=rootroot
+spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.enabled=true
 
-   jwt.secret=your_secret_key
-   jwt.expiration=86400000
-   ```
+jwt.secret=your_secret_key
+jwt.expiration=86400000
+```
 
-3. Запустите приложение:
+3. Запуск:
 
-   ```bash
-   ./mvnw clean spring-boot:run
-   # или для CLI-режима
-   ./mvnw spring-boot:run -Dspring-boot.run.profiles=console
-   ```
-
----
-
-## Использование API
-
-| Метод | Endpoint                   | Описание                                 |
-|-------|----------------------------|------------------------------------------|
-| POST  | `/auth/register`           | Регистрация нового пользователя          |
-| POST  | `/auth/login`              | Получение JWT                            |
-| POST  | `/api/categories`          | Создать категорию (текущий пользователь) |
-| GET   | `/api/categories`          | Список категорий текущего пользователя   |
-| POST  | `/api/expenses`            | Добавить расход                          |
-| GET   | `/api/expenses`            | Список расходов с фильтрами и пагинацией |
-
-**Пример запроса**:
-
-```http
-GET /api/expenses?from=2025-01-01&to=2025-01-31&categoryId=3&minAmount=10&maxAmount=100&sortBy=amount&order=desc&page=0&size=10
-Authorization: Bearer eyJhbGci...
+```bash
+mvn clean spring-boot:run
 ```
 
 ---
 
-## Swagger UI
+## ⚙️ Конфигурация (для тестов)
 
-1. Откройте в браузере:  
+`src/test/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.flyway.enabled=false
+
+jwt.secret=test-secret
+jwt.expiration=3600000
+```
+
+---
+
+## 🌐 Использование API
+
+| Метод | Endpoint         | Описание                                 |
+|-------|------------------|------------------------------------------|
+| POST  | `/auth/register` | Регистрация нового пользователя          |
+| POST  | `/auth/login`    | Авторизация, получение JWT               |
+| GET   | `/api/categories`| Получить список категорий текущего юзера |
+| POST  | `/api/categories`| Добавить новую категорию                 |
+| GET   | `/api/expenses`  | Фильтрация и пагинация расходов          |
+| POST  | `/api/expenses`  | Создать новый расход                     |
+
+**Пример запроса с фильтрацией:**
+
+```
+GET /api/expenses?from=2025-01-01&to=2025-01-31&categoryId=3&minAmount=10&maxAmount=100&sortBy=amount&order=desc&page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzI1...
+```
+
+---
+
+## 🧪 Тестирование
+
+### ✅ Юнит и интеграционные тесты
+
+- `ExpenseServiceTest`, `CategoryServiceTest` — логика
+- `ExpenseControllerTest`, `CategoryControllerTest` — API поведение (`@WebMvcTest`)
+- `ExpenseRepositoryTest`, `CategoryRepositoryTest` — работа с БД (`@DataJpaTest`)
+
+### Запуск
+
+```bash
+# Все тесты
+mvn test
+
+# Конкретные классы
+mvn -Dtest=ExpenseControllerTest,CategoryRepositoryTest test
+```
+
+---
+
+## 🧾 Swagger UI
+
+1. Перейти в браузере:
    ```
    http://localhost:8080/swagger-ui.html
    ```
-2. Нажмите **Authorize**, введите `Bearer <ваш токен>`, нажмите **Authorize** ещё раз.  
-3. Пробуйте все эндпоинты!  
+
+2. Нажать **Authorize**, ввести токен:
+   ```
+   Bearer <ваш_jwt_токен>
+   ```
+
+3. Использовать все эндпоинты напрямую из Swagger UI
 
 ---
 
-## Тестирование
+## 🐘 Миграции Flyway
 
-- **Unit**:  
-    ```bash
-    mvn test -Dtest=ExpenseServiceTest,CategoryServiceTest,UserServiceTest
-    ```
-- **Интеграционные**:  
-    ```bash
-    mvn test -Dtest=CategoryRepositoryTest,ExpenseRepositoryTest,ExpenseControllerTest
-    ```
+Файлы миграций находятся в `src/main/resources/db/migration`.
 
----
-
-## Миграции Flyway
-
-Все скрипты лежат в `src/main/resources/db/migration`.  
-Пример создания админа:
+Пример SQL для ручной вставки:
 
 ```sql
 INSERT INTO users (id, username, password, role)
-VALUES (100, 'admin', '$2a$10$...', 'ADMIN')
+VALUES (1, 'admin', '$2a$10$hash...', 'ADMIN')
 ON CONFLICT (id) DO NOTHING;
 ```
 
 ---
 
-## Планы на будущее
+## 🔮 Планы на будущее
 
-- Unit и интеграционные тесты для AuthController (JWT)  
-- Расширенная аналитика (агрегации по категориям)  
-- Экспорт отчётов в Excel/PDF  
-- Разграничение прав через `@PreAuthorize` (ADMIN vs USER)  
-- CI/CD (GitHub Actions: сборка, тесты, проверка качества)  
-- Деплой на Railway / Render  
-- Веб-интерфейс на React/Angular  
+- 🧪 Добавить тесты для `AuthController`
+- 📊 Расширить аналитику: суммы по категориям
+- 📤 Экспорт отчётов (Excel / PDF)
+- 🔐 Ограничение доступа через `@PreAuthorize`
+- 🚀 CI/CD (GitHub Actions)
+- 🌍 Деплой на Railway / Render
+- 🖥️ Веб-интерфейс на React или Angular
+
+---
+
+## 🤝 Contributing
+
+PR-ы приветствуются! Пожалуйста, оформляйте с описанием изменений и покрытием тестами.
+
+---
+
+## 📜 Лицензия
+
+[MIT](LICENSE)
 
 ---
 
