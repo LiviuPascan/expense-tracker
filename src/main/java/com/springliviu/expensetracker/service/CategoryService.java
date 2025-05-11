@@ -12,6 +12,11 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
+    public Category getCategoryById(Long id) {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Категория с ID " + id + " не найдена"));
+    }
+
     public CategoryService(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
     }

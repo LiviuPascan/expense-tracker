@@ -1,19 +1,21 @@
 package com.springliviu.expensetracker.repository;
 
 import com.springliviu.expensetracker.model.Category;
+import com.springliviu.expensetracker.model.Role;
 import com.springliviu.expensetracker.model.User;
-import com.springliviu.expensetracker.model.Role;           // ← вот так
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class CategoryRepositoryTest {
 
@@ -29,7 +31,7 @@ class CategoryRepositoryTest {
         User user = new User();
         user.setUsername("categoryUser");
         user.setPassword("123");
-        user.setRole(Role.USER);                        // ← обязательно
+        user.setRole(Role.USER);
         user = userRepository.save(user);
 
         Category category = new Category();

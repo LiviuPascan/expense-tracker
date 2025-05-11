@@ -1,8 +1,12 @@
 package com.springliviu.expensetracker.controller;
 
+import com.springliviu.expensetracker.dto.ExpenseDto;
+import com.springliviu.expensetracker.dto.ExpensePageDto;
+import com.springliviu.expensetracker.dto.ExpenseRequest;
+import com.springliviu.expensetracker.mapper.ExpenseMapper;
+import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.security.UserDetailsImpl;
 import com.springliviu.expensetracker.service.ExpenseService;
-import com.springliviu.expensetracker.dto.ExpensePageDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,9 +27,11 @@ import java.time.LocalDate;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final ExpenseMapper expenseMapper;
 
-    public ExpenseController(ExpenseService expenseService) {
+    public ExpenseController(ExpenseService expenseService, ExpenseMapper expenseMapper) {
         this.expenseService = expenseService;
+        this.expenseMapper = expenseMapper;
     }
 
     @Operation(summary = "Фильтрация расходов с пагинацией и общей суммой (DTO)")
@@ -58,7 +64,6 @@ public class ExpenseController {
                 sortBy, order,
                 page, size
         );
-        System.out.println(">>> DTO returned: " + dtoPage);
         return ResponseEntity.ok(dtoPage);
     }
 
@@ -66,25 +71,24 @@ public class ExpenseController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Расход успешно создан",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Void.class))),
+                            schema = @Schema(implementation = ExpenseDto.class))),
             @ApiResponse(responseCode = "400", description = "Ошибка запроса", content = @Content)
     })
     @PostMapping
-    public ResponseEntity<Void> createExpense(
-            @RequestBody com.springliviu.expensetracker.dto.ExpenseRequest request,
+    public ResponseEntity<ExpenseDto> createExpense(
+            @RequestBody ExpenseRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        // мапим DTO → Category и передаем дальше
-        var category = new com.springliviu.expensetracker.model.Category();
+        var category = new Category();
         category.setId(request.categoryId());
 
-        expenseService.createExpense(
+        var expense = expenseService.createExpense(
                 request.amount(),
                 request.description(),
                 request.date(),
                 userDetails.getUser(),
                 category
         );
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(expenseMapper.toDto(expense));
     }
 }
