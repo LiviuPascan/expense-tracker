@@ -20,9 +20,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title(swaggerProperties.getTitle())
-                        .description(swaggerProperties.getDescription())
-                        .version(swaggerProperties.getVersion()))
+                        .title("Expense Tracker API")
+                        .description("REST API for tracking personal expenses")
+                        .version("1.0.0"))
                 .addSecurityItem(new SecurityRequirement().addList("BearerAuth"))
                 .components(new io.swagger.v3.oas.models.Components()
                         .addSecuritySchemes("BearerAuth",

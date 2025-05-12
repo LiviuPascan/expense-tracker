@@ -1,5 +1,6 @@
 package com.springliviu.expensetracker.service;
 
+import com.springliviu.expensetracker.exception.NotFoundException;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.User;
 import com.springliviu.expensetracker.repository.CategoryRepository;
@@ -34,7 +35,12 @@ public class CategoryService {
         category.setUser(user);
         return categoryRepository.save(category);
     }
-
+    public void deleteById(Long id) {
+        if (!categoryRepository.existsById(id)) {
+            throw new NotFoundException("Категория с ID " + id + " не найдена");
+        }
+        categoryRepository.deleteById(id);
+    }
     public List<Category> getCategoriesByUser(User user) {
         return categoryRepository.findByUser(user);
     }

@@ -1,8 +1,8 @@
 package com.springliviu.expensetracker.repository;
 
+import com.springliviu.expensetracker.dto.ExpenseSummaryDto;
 import com.springliviu.expensetracker.model.Expense;
 import com.springliviu.expensetracker.model.User;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -43,4 +43,16 @@ public interface ExpenseRepository
             @Param("minAmount")  BigDecimal minAmount,
             @Param("maxAmount")  BigDecimal maxAmount
     );
+
+    @Query("""
+    SELECT new com.springliviu.expensetracker.dto.ExpenseSummaryDto(
+        e.category.name,
+        SUM(e.amount)
+    )
+    FROM Expense e
+    WHERE e.user = :user
+    GROUP BY e.category.name
+""")
+    List<ExpenseSummaryDto> sumByCategory(@Param("user") User user);
+
 }

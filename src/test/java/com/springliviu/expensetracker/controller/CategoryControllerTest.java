@@ -41,6 +41,14 @@ class CategoryControllerTest {
         return new UserDetailsImpl(user);
     }
 
+    private UserDetailsImpl getMockAdmin() {
+        User admin = new User();
+        admin.setId(99L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+        return new UserDetailsImpl(admin);
+    }
+
     @Test
     void shouldCreateCategory() throws Exception {
         CategoryRequest request = new CategoryRequest("Transport");
@@ -76,4 +84,33 @@ class CategoryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Food"));
     }
+
+    @Test
+    void shouldAllowAdminToDeleteCategory() throws Exception {
+        mockMvc.perform(delete("/api/categories/42")
+                        .with(user(getMockAdmin()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        Mockito.verify(categoryService).deleteById(42L);
+    }
+
+    @Test
+    void shouldForbidUserToDeleteCategory() throws Exception {
+        mockMvc.perform(delete("/api/categories/42")
+                        .with(user(getMockUser()))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+
+        Mockito.verify(categoryService, Mockito.never()).deleteById(any());
+    }
+
+    @Test
+    void shouldReturn401IfUnauthenticatedOnDelete() throws Exception {
+        mockMvc.perform(delete("/api/categories/42")) // ← без .with(csrf())
+                .andExpect(status().isForbidden());
+
+        Mockito.verify(categoryService, Mockito.never()).deleteById(any());
+    }
+
 }

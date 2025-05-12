@@ -2,6 +2,7 @@ package com.springliviu.expensetracker.service;
 
 import com.springliviu.expensetracker.dto.ExpenseDto;
 import com.springliviu.expensetracker.dto.ExpensePageDto;
+import com.springliviu.expensetracker.dto.ExpenseSummaryDto;
 import com.springliviu.expensetracker.mapper.ExpenseMapper;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.model.Expense;
@@ -148,5 +149,8 @@ public class ExpenseService {
                 ep.totalElements(),
                 ep.totalSum()
         );
+    }
+    public List<ExpenseSummaryDto> getSummaryByCategory(User user) {
+        return expenseRepository.sumByCategory(user);
     }
 }

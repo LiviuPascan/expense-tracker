@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,8 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
+    // 🔒 Только владелец может получать свои категории
+    @PreAuthorize("#userDetails.user.id == authentication.principal.user.id")
     @Operation(summary = "Получить категории текущего пользователя")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Категории успешно получены",
@@ -40,10 +43,11 @@ public class CategoryController {
 
         User user = userDetails.getUser();
         List<Category> categories = categoryService.getCategoriesByUser(user);
-        System.out.println(">>> Categories = " + categories);
         return ResponseEntity.ok(categories);
     }
 
+    // 🔒 Только владелец может создавать себе категории
+    @PreAuthorize("#userDetails.user.id == authentication.principal.user.id")
     @Operation(summary = "Создать новую категорию")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Категория успешно создана",
@@ -58,7 +62,19 @@ public class CategoryController {
 
         User user = userDetails.getUser();
         Category created = categoryService.createCategory(request.name(), user);
-        System.out.println(">>> Category created = " + created);
         return ResponseEntity.ok(created);
+    }
+
+    // 🔒 Только ADMIN может удалять любые категории
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Удалить категорию по ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Категория удалена"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён", content = @Content)
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+        categoryService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }

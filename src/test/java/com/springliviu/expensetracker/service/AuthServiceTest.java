@@ -117,18 +117,26 @@ class AuthServiceTest {
 
     @Test
     void login_SuccessReturnsJwt() {
-        User user = new User();
-        user.setUsername("carol");
-        UserDetailsImpl userDetails = new UserDetailsImpl(user);
-
-        Authentication auth = mock(Authentication.class);
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(auth);
-        when(auth.getPrincipal()).thenReturn(userDetails);
-        when(jwtTokenProvider.generateToken(userDetails))
-                .thenReturn("jwt-token-123");
+        mockSuccessAuth("carol", "jwt-token-123");
 
         String token = authService.login("carol", "pwd");
+
         assertEquals("jwt-token-123", token);
+        verify(authenticationManager).authenticate(any());
+        verify(jwtTokenProvider).generateToken(any());
+    }
+
+    // === ВСПОМОГАТЕЛЬНЫЙ МЕТОД ===
+
+    private void mockSuccessAuth(String username, String jwtToken) {
+        User user = new User();
+        user.setUsername(username);
+        UserDetailsImpl userDetails = new UserDetailsImpl(user);
+
+        Authentication mockAuth = mock(Authentication.class);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mockAuth);
+        when(mockAuth.getPrincipal()).thenReturn(userDetails);
+        when(jwtTokenProvider.generateToken(userDetails)).thenReturn(jwtToken);
     }
 }

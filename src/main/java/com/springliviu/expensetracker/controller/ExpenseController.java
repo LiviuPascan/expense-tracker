@@ -3,6 +3,7 @@ package com.springliviu.expensetracker.controller;
 import com.springliviu.expensetracker.dto.ExpenseDto;
 import com.springliviu.expensetracker.dto.ExpensePageDto;
 import com.springliviu.expensetracker.dto.ExpenseRequest;
+import com.springliviu.expensetracker.dto.ExpenseSummaryDto;
 import com.springliviu.expensetracker.mapper.ExpenseMapper;
 import com.springliviu.expensetracker.model.Category;
 import com.springliviu.expensetracker.security.UserDetailsImpl;
@@ -90,5 +91,20 @@ public class ExpenseController {
                 category
         );
         return ResponseEntity.ok(expenseMapper.toDto(expense));
+    }
+
+
+    @Operation(summary = "Получить суммы расходов по категориям")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Сводка по категориям",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ExpenseSummaryDto.class)))
+    })
+    @GetMapping("/summary-by-category")
+    public ResponseEntity<?> getSummaryByCategory(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        var summary = expenseService.getSummaryByCategory(userDetails.getUser());
+        return ResponseEntity.ok(summary);
     }
 }
