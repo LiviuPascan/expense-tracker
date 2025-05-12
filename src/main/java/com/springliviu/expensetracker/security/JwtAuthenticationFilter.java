@@ -30,26 +30,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getServletPath();
+        String authHeader = request.getHeader("Authorization");
 
-        // Пропускаем пути, не требующие авторизации
+        // Логируем входящий запрос
+        System.out.printf("🔍 Incoming request: %s %s%n", request.getMethod(), path);
+        System.out.printf("🔐 Authorization header: %s%n", authHeader);
+
+        // Пути, исключённые из фильтрации
         if (path.startsWith("/auth")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-resources")
-                || path.startsWith("/webjars")
-                || path.equals("/favicon.ico")) {
+                || path.startsWith("/swagger-ui.html")
+                || path.startsWith("/webjars")) {
+            System.out.println("✅ Path is whitelisted, skipping JWT filter.");
             filterChain.doFilter(request, response);
             return;
         }
 
-        String authHeader = request.getHeader("Authorization");
+        // Обработка токена
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("🚫 Missing or invalid Authorization header.");
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authHeader.substring(7);
         String username = jwtTokenProvider.extractUsername(token);
+        System.out.printf("👤 Extracted username from token: %s%n", username);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
@@ -62,9 +70,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                System.out.println("✅ JWT validated. Authentication set.");
+            } else {
+                System.out.println("❌ Invalid JWT token.");
             }
         }
 
         filterChain.doFilter(request, response);
     }
+
 }

@@ -1,8 +1,8 @@
 package com.springliviu.expensetracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.springliviu.expensetracker.service.TestSecurityConfig;
 import com.springliviu.expensetracker.dto.AuthRequest;
-import com.springliviu.expensetracker.dto.AuthResponse;
 import com.springliviu.expensetracker.exception.UsernameAlreadyExistsException;
 import com.springliviu.expensetracker.service.AuthService;
 import org.junit.jupiter.api.Test;
@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 }
         )
 )
+@Import(TestSecurityConfig.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTest {
 
