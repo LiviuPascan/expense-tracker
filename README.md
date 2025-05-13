@@ -1,71 +1,71 @@
 # ExpenseTracker
 
-Личное приложение для учёта расходов с REST API на Spring Boot, JWT-аутентификацией, PostgreSQL и Swagger-документацией.
+Personal expense tracking application with Spring Boot REST API, JWT authentication, PostgreSQL, and Swagger documentation.
 
-## Оглавление
+## Table of Contents
 
-- [Описание](#описание)  
-- [Технологии](#технологии)  
-- [Возможности](#возможности)  
-- [Установка и запуск](#установка-и-запуск)  
-- [Конфигурация](#конфигурация)  
+- [Overview](#overview)  
+- [Tech Stack](#tech-stack)  
+- [Features](#features)  
+- [Getting Started](#getting-started)  
+- [Configuration](#configuration)  
 - [Swagger UI](#swagger-ui)  
-- [API](#api)  
-- [Тестирование](#тестирование)  
-- [Миграции Flyway](#миграции-flyway)  
-- [Дорожная карта](#дорожная-карта)  
+- [API Reference](#api-reference)  
+- [Testing](#testing)  
+- [Flyway Migrations](#flyway-migrations)  
+- [Roadmap](#roadmap)  
 - [Contributing](#contributing)  
-- [Лицензия](#лицензия)  
+- [License](#license)  
 
-## Описание
+## Overview
 
-ExpenseTracker — это бекенд-приложение для управления личными расходами.  
-Позволяет пользователям регистрироваться, логиниться и вести учёт расходов по категориям с помощью безопасного REST API и JWT.
+**ExpenseTracker** is a backend application for managing personal finances.  
+It allows users to register, log in, and track expenses by category with a secure REST API and JWT-based authentication.
 
-## Технологии
+## Tech Stack
 
 - Java 17+
 - Spring Boot 3.2.x
 - Spring Security + JWT
 - Spring Data JPA + Hibernate
 - PostgreSQL + Flyway
-- MapStruct (маппинг DTO)
+- MapStruct (DTO mapping)
 - Swagger (springdoc-openapi)
 - JUnit 5 + Mockito
-- H2 (для тестов)
+- H2 (for testing)
 - Maven
 
-## Возможности
+## Features
 
-### Авторизация
+### Authentication
 
-- Регистрация и логин с JWT-токеном
-- Защита всех API через Bearer
-- Обработка ошибок: 401 / 403 / 400
+- User registration and login with JWT
+- Secured API endpoints with Bearer token
+- Error handling: 401 / 403 / 400
 
-### Категории
+### Categories
 
-- Привязаны к пользователю
-- Добавление, получение, удаление
+- User-specific categories
+- Add, list, and delete categories
 
-### Расходы
+### Expenses
 
-- Создание, просмотр с фильтрацией
-- Фильтрация по дате, категории, сумме
-- Пагинация, сортировка
-- Подсчёт общей суммы
-- DTO + MapStruct
+- Create and view expenses
+- Filter by date, category, amount
+- Pagination & sorting
+- Total amount calculation
+- DTOs with MapStruct
 
-## Установка и запуск
+## Getting Started
 
-1. Клонировать проект:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/LiviuPascan/expense-tracker.git
 cd expense-tracker
 ```
 
-2. Запустить PostgreSQL (Docker):
+### 2. Start PostgreSQL (via Docker)
 
 ```bash
 docker run -d \
@@ -77,7 +77,9 @@ docker run -d \
   postgres:15
 ```
 
-3. Обновить `src/main/resources/application.yml`:
+### 3. Update application config
+
+Edit `src/main/resources/application.yml`:
 
 ```yaml
 spring:
@@ -96,15 +98,15 @@ jwt:
   expiration: 86400000
 ```
 
-4. Запуск:
+### 4. Start the app
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-## Конфигурация (тесты)
+## Configuration (for testing)
 
-`src/test/resources/application.properties`:
+In `src/test/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:h2:mem:testdb
@@ -118,62 +120,62 @@ jwt.expiration=3600000
 
 ## Swagger UI
 
-1. Открыть в браузере:
+1. Open in browser:  
    ```
    http://localhost:8080/swagger-ui.html
    ```
 
-2. Нажать "Authorize", ввести:
+2. Click “Authorize” and enter:
    ```
-   Bearer <ваш JWT токен>
+   Bearer <your-JWT-token>
    ```
 
-3. Протестировать API прямо из UI
+3. Explore and test the API directly.
 
-## API
+## API Reference
 
-| Метод | Endpoint          | Описание                                 |
-|-------|-------------------|------------------------------------------|
-| POST  | `/auth/register`  | Регистрация пользователя                 |
-| POST  | `/auth/login`     | Аутентификация, выдача JWT               |
-| GET   | `/api/categories` | Список категорий текущего пользователя   |
-| POST  | `/api/categories` | Добавление новой категории               |
-| GET   | `/api/expenses`   | Список расходов с фильтрацией и пагинацией |
-| POST  | `/api/expenses`   | Создание нового расхода                  |
+| Method | Endpoint           | Description                                  |
+|--------|--------------------|----------------------------------------------|
+| POST   | `/auth/register`   | Register a new user                          |
+| POST   | `/auth/login`      | Login and get a JWT token                    |
+| GET    | `/api/categories`  | Get user’s categories                        |
+| POST   | `/api/categories`  | Create a new category                        |
+| GET    | `/api/expenses`    | Get filtered and paginated expenses         |
+| POST   | `/api/expenses`    | Create a new expense                         |
 
-Пример запроса с фильтрацией:
+Example request with filters:
 
 ```
 GET /api/expenses?from=2024-01-01&to=2024-02-01&categoryId=2&minAmount=50&sortBy=amount&order=desc
 Authorization: Bearer eyJhbGciOi...
 ```
 
-## Тестирование
+## Testing
 
 ```bash
-# Все тесты
+# Run all tests
 ./mvnw test
 
-# Запуск конкретных классов
+# Run specific test classes
 ./mvnw -Dtest=AuthServiceTest,ExpenseControllerTest test
 ```
 
-Тестируются:
+Test coverage includes:
 
-- Логика (`AuthServiceTest`, `ExpenseServiceTest`)
-- Контроллеры (`@WebMvcTest`)
-- Репозитории (`@DataJpaTest`)
-- Обработка ошибок
+- Business logic (unit tests)
+- Controllers (`@WebMvcTest`)
+- Repositories (`@DataJpaTest`)
+- Error handling
 
-## Миграции Flyway
+## Flyway Migrations
 
-Файлы миграций находятся в:
+Migration files are located in:
 
 ```
 src/main/resources/db/migration/
 ```
 
-Пример SQL:
+Example migration:
 
 ```sql
 INSERT INTO users (id, username, password, role)
@@ -181,40 +183,41 @@ VALUES (1, 'admin', '$2a$10$...', 'ADMIN')
 ON CONFLICT DO NOTHING;
 ```
 
-## Дорожная карта
+## Roadmap
 
-### Завершено
+### Done
 
-- [x] JWT-аутентификация
-- [x] Регистрация и логин
-- [x] Swagger UI
-- [x] Категории: CRUD
-- [x] Расходы: фильтрация, пагинация
-- [x] DTO + MapStruct
-- [x] Интеграционные и юнит тесты
+- JWT Authentication
+- Registration & Login
+- Swagger UI
+- Categories CRUD
+- Expense filtering & pagination
+- DTO with MapStruct
+- Unit and integration tests
 
-### В процессе
+### In Progress
 
-- [ ] Глобальный ExceptionHandler
-- [ ] Рефакторинг тестов контроллеров
-- [ ] Удаление/редактирование расходов
+- [ ] Global Exception Handling
+- [ ] Controller test refactoring
+- [ ] Expense update/delete support
 
-### Планируется
+### Planned
 
-- [ ] Статистика по категориям
-- [ ] Экспорт в CSV / PDF
+- [ ] Expense stats by category
+- [ ] Export to CSV / PDF
 - [ ] CI/CD (GitHub Actions)
-- [ ] Веб-интерфейс на React
-- [ ] Деплой на Railway / Render
+- [ ] Frontend in React
+- [ ] Deploy to Railway / Render
 
 ## Contributing
 
-1. Сделайте форк
-2. Создайте ветку `feature/ИмяФичи`
-3. Закоммитьте изменения
-4. Откройте pull request
+1. Fork the project  
+2. Create a feature branch: `feature/YourFeatureName`  
+3. Commit your changes  
+4. Open a pull request  
 
-## Лицензия
+## License
 
 [MIT License](LICENSE)
+
 
