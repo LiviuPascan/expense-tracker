@@ -42,7 +42,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-resources")
                 || path.startsWith("/swagger-ui.html")
-                || path.startsWith("/webjars")) {
+                || path.startsWith("/webjars")
+                || path.startsWith("/api")
+                || path.equals("/"))      {
+
+
             System.out.println("✅ Path is whitelisted, skipping JWT filter.");
             filterChain.doFilter(request, response);
             return;

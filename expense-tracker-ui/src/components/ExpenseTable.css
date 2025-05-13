@@ -1,0 +1,25 @@
+.expense-table-wrapper {
+    margin-top: 2rem;
+}
+
+.expense-table {
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.expense-table th,
+.expense-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.expense-table th {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.expense-table tr:nth-child(even) {
+    background-color: #fafafa;
+}
