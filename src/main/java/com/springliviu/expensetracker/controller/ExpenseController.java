@@ -93,6 +93,39 @@ public class ExpenseController {
         return ResponseEntity.ok(expenseMapper.toDto(expense));
     }
 
+    @Operation(summary = "Обновить расход по ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Расход успешно обновлён",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ExpenseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Неверные данные запроса", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Нет доступа к ресурсу", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Расход не найден", content = @Content)
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<ExpenseDto> updateExpense(
+            @PathVariable Long id,
+            @RequestBody ExpenseRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        var updated = expenseService.updateExpense(id, request, userDetails.getUser());
+        return ResponseEntity.ok(expenseMapper.toDto(updated));
+    }
+
+    @Operation(summary = "Удалить расход по ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Расход успешно удалён"),
+            @ApiResponse(responseCode = "403", description = "Нет доступа к ресурсу", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Расход не найден", content = @Content)
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteExpense(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        expenseService.deleteExpense(id, userDetails.getUser());
+        return ResponseEntity.noContent().build();
+    }
 
     @Operation(summary = "Получить суммы расходов по категориям")
     @ApiResponses({

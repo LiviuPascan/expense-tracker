@@ -2,6 +2,7 @@ package com.springliviu.expensetracker.service;
 
 import com.springliviu.expensetracker.dto.ExpenseDto;
 import com.springliviu.expensetracker.dto.ExpensePageDto;
+import com.springliviu.expensetracker.dto.ExpenseRequest;
 import com.springliviu.expensetracker.dto.ExpenseSummaryDto;
 import com.springliviu.expensetracker.mapper.ExpenseMapper;
 import com.springliviu.expensetracker.model.Category;
@@ -29,9 +30,6 @@ public class ExpenseService {
         this.expenseMapper     = expenseMapper;
     }
 
-    /**
-     * Создаёт и сохраняет новый расход.
-     */
     public Expense createExpense(
             BigDecimal amount,
             String description,
@@ -64,9 +62,36 @@ public class ExpenseService {
         return expenseRepository.save(expense);
     }
 
-    /**
-     * Вспомогательная обёртка над Page<Expense>
-     */
+    public Expense updateExpense(Long expenseId, ExpenseRequest request, User currentUser) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("Expense not found"));
+
+        if (!expense.getUser().getId().equals(currentUser.getId())) {
+            throw new SecurityException("You are not allowed to update this expense");
+        }
+
+        expense.setAmount(request.amount());
+        expense.setDescription(request.description());
+        expense.setDate(request.date());
+
+        Category category = new Category();
+        category.setId(request.categoryId());
+        expense.setCategory(category);
+
+        return expenseRepository.save(expense);
+    }
+
+    public void deleteExpense(Long expenseId, User currentUser) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("Expense not found"));
+
+        if (!expense.getUser().getId().equals(currentUser.getId())) {
+            throw new SecurityException("You are not allowed to delete this expense");
+        }
+
+        expenseRepository.delete(expense);
+    }
+
     public record ExpensePage(
             List<Expense> content,
             long totalElements,
@@ -74,9 +99,6 @@ public class ExpenseService {
             BigDecimal totalSum
     ) {}
 
-    /**
-     * Фильтрация расходов (работает с сущностями).
-     */
     public ExpensePage getFilteredExpenses(
             User user,
             LocalDate from,
@@ -118,9 +140,6 @@ public class ExpenseService {
         );
     }
 
-    /**
-     * DTO-обёртка для ответа контроллера.
-     */
     public ExpensePageDto getFilteredExpensesDto(
             User user,
             LocalDate from,
@@ -150,6 +169,7 @@ public class ExpenseService {
                 ep.totalSum()
         );
     }
+
     public List<ExpenseSummaryDto> getSummaryByCategory(User user) {
         return expenseRepository.sumByCategory(user);
     }
