@@ -1,132 +1,148 @@
 package com.springliviu.expensetracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.springliviu.expensetracker.service.TestSecurityConfig;
 import com.springliviu.expensetracker.dto.AuthRequest;
-import com.springliviu.expensetracker.exception.UsernameAlreadyExistsException;
-import com.springliviu.expensetracker.service.AuthService;
+import com.springliviu.expensetracker.model.Role;
+import com.springliviu.expensetracker.model.User;
+import com.springliviu.expensetracker.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(
-        controllers = AuthController.class,
-        excludeAutoConfiguration = {
-                SecurityAutoConfiguration.class,
-                SecurityFilterAutoConfiguration.class
-        },
-        excludeFilters = @ComponentScan.Filter(
-                type = FilterType.ASSIGNABLE_TYPE,
-                classes = {
-                        com.springliviu.expensetracker.security.JwtAuthenticationFilter.class,
-                        com.springliviu.expensetracker.security.SecurityConfig.class
-                }
-        )
-)
-@Import(TestSecurityConfig.class)
+@SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
-class AuthControllerTest {
+public class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
-    private AuthService authService;
+    @BeforeEach
+    void setUp() {
+        userRepository.deleteAll();
+    }
 
-    @Test
-    void register_Success_Returns200() throws Exception {
-        AuthRequest req = new AuthRequest("alice", "pwd");
-
-        // ничего не кидает — будет OK
-        Mockito.doNothing().when(authService).register("alice", "pwd");
+    @Test // Успешная регистрация нового пользователя
+    void register_ShouldReturn200() throws Exception {
+        AuthRequest request = new AuthRequest("alice", "password");
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andExpect(content().string("User registered successfully"));
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
-    @Test
-    void register_UsernameExists_Returns400() throws Exception {
-        AuthRequest req = new AuthRequest("bob", "pwd");
-        Mockito.doThrow(new UsernameAlreadyExistsException())
-                .when(authService).register("bob", "pwd");
+    @Test // Регистрация с существующим username должна вернуть 400
+    void register_ShouldReturn400_WhenUsernameExists() throws Exception {
+        User user = new User();
+        user.setUsername("bob");
+        user.setPassword(passwordEncoder.encode("pass"));
+        user.setRole(Role.USER);
+        userRepository.save(user);
+
+        AuthRequest request = new AuthRequest("bob", "password");
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Username already exists"));
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void register_InvalidInput_Returns400() throws Exception {
-        AuthRequest req = new AuthRequest("  ", "   ");
-        // сервис выбросит IllegalArgumentException
-        Mockito.doThrow(new IllegalArgumentException("Username must not be empty"))
-                .when(authService).register(anyString(), anyString());
+    @Test // Регистрация с пустым username должна вернуть 400
+    void register_ShouldReturn400_WhenUsernameEmpty() throws Exception {
+        AuthRequest request = new AuthRequest("", "password");
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Username must not be empty"));
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void login_Success_ReturnsJwt() throws Exception {
-        AuthRequest req = new AuthRequest("alice", "pwd");
-        String fakeToken = "jwt.token.here";
-        Mockito.when(authService.login("alice", "pwd"))
-                .thenReturn(fakeToken);
+    @Test // Регистрация с пустым паролем должна вернуть 400
+    void register_ShouldReturn400_WhenPasswordEmpty() throws Exception {
+        AuthRequest request = new AuthRequest("testuser", "");
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test // Успешный вход с корректными данными
+    void login_ShouldReturn200_WhenCredentialsAreValid() throws Exception {
+        User user = new User();
+        user.setUsername("carol");
+        user.setPassword(passwordEncoder.encode("pass123"));
+        user.setRole(Role.USER);
+        userRepository.save(user);
+
+        AuthRequest request = new AuthRequest("carol", "pass123");
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value(fakeToken));
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
-    @Test
-    void login_BadCredentials_Returns401() throws Exception {
-        AuthRequest req = new AuthRequest("alice", "wrong");
-        // симулируем падение аутентификации
-        Mockito.when(authService.login("alice", "wrong"))
-                .thenThrow(new org.springframework.security.core.AuthenticationException("Bad") {});
+    @Test // Неверный пароль при логине должен вернуть 401
+    void login_ShouldReturn401_WhenPasswordIncorrect() throws Exception {
+        User user = new User();
+        user.setUsername("dan");
+        user.setPassword(passwordEncoder.encode("correct"));
+        user.setRole(Role.USER);
+        userRepository.save(user);
+
+        AuthRequest request = new AuthRequest("dan", "wrong");
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
     }
 
-    @Test
-    void login_InvalidInput_Returns400() throws Exception {
-        AuthRequest req = new AuthRequest("", "");
-        Mockito.when(authService.login(anyString(), anyString()))
-                .thenThrow(new IllegalArgumentException("Username must not be empty"));
+    @Test // Попытка входа с несуществующим пользователем должна вернуть 401
+    void login_ShouldReturn401_WhenUsernameNotFound() throws Exception {
+        AuthRequest request = new AuthRequest("unknown", "whatever");
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test // Вход с пустым username должен вернуть 400
+    void login_ShouldReturn400_WhenUsernameEmpty() throws Exception {
+        AuthRequest request = new AuthRequest("", "password");
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test // Вход с пустым паролем должен вернуть 400
+    void login_ShouldReturn400_WhenPasswordEmpty() throws Exception {
+        AuthRequest request = new AuthRequest("user", "");
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 }

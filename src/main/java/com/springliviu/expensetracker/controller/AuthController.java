@@ -15,7 +15,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // Явный конструктор для инициализации final-поля
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
@@ -26,9 +25,7 @@ public class AuthController {
             authService.register(request.getUsername(), request.getPassword());
             return ResponseEntity.ok("User registered successfully");
         } catch (UsernameAlreadyExistsException | IllegalArgumentException ex) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(ex.getMessage());
+            return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
 
@@ -38,15 +35,9 @@ public class AuthController {
             String token = authService.login(request.getUsername(), request.getPassword());
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (IllegalArgumentException ex) {
-            // пустые username/password
-            return ResponseEntity
-                    .badRequest()
-                    .build();
+            return ResponseEntity.badRequest().build();
         } catch (AuthenticationException ex) {
-            // неверные креды
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 }

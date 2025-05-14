@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -77,7 +78,7 @@ public class ExpenseController {
     })
     @PostMapping
     public ResponseEntity<ExpenseDto> createExpense(
-            @RequestBody ExpenseRequest request,
+            @Valid @RequestBody ExpenseRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         var category = new Category();
@@ -105,7 +106,7 @@ public class ExpenseController {
     @PutMapping("/{id}")
     public ResponseEntity<ExpenseDto> updateExpense(
             @PathVariable Long id,
-            @RequestBody ExpenseRequest request,
+            @Valid @RequestBody ExpenseRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         var updated = expenseService.updateExpense(id, request, userDetails.getUser());

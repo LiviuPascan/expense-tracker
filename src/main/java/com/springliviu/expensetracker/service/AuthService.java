@@ -20,7 +20,6 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
 
-    // Явный конструктор инициализирует все final-поля
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
@@ -31,11 +30,6 @@ public class AuthService {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    /**
-     * Регистрирует нового пользователя.
-     * @throws IllegalArgumentException, если username или password пустые.
-     * @throws UsernameAlreadyExistsException, если пользователь с таким именем уже есть.
-     */
     public void register(String username, String password) {
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Username must not be empty");
@@ -54,11 +48,6 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    /**
-     * Аутентифицирует пользователя и возвращает JWT.
-     * @throws IllegalArgumentException, если username или password пустые.
-     * @throws org.springframework.security.core.AuthenticationException, если аутентификация неуспешна.
-     */
     public String login(String username, String password) {
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Username must not be empty");
