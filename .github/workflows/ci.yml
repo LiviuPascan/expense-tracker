@@ -20,5 +20,5 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build with Maven (skip tests)
-      run: mvn -B clean install -DskipTests
+    - name: Build with Maven
+      run: mvn clean install
