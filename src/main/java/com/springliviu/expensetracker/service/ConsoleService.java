@@ -38,7 +38,7 @@ public class ConsoleService {
             System.out.print("Введите имя категории: ");
             String categoryName = scanner.nextLine();
             if (!categoryName.isBlank()) {
-                categoryService.createCategory(categoryName, user);
+                categoryService.createCategoryForUsername(categoryName, user.getUsername());
             } else {
                 System.out.println("⚠️ Имя категории не может быть пустым.");
             }
@@ -56,7 +56,7 @@ public class ConsoleService {
             String dateInput = scanner.nextLine();
             LocalDate date = dateInput.isBlank() ? LocalDate.now() : LocalDate.parse(dateInput);
 
-            List<Category> categories = categoryService.getCategoriesByUser(user);
+            List<Category> categories = categoryService.getCategoriesByUsername(user.getUsername());
             if (categories.isEmpty()) {
                 System.out.println("⚠️ У вас нет категорий.");
                 return;
