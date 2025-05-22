@@ -1,4 +1,4 @@
-name: Multi-Module Demo CI
+name: Expense Tracker CI
 
 on:
   push:
